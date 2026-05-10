@@ -7,15 +7,19 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
+// PluginSettings holds the plaintext configuration.
 type PluginSettings struct {
-	Path    string                `json:"path"`
-	Secrets *SecretPluginSettings `json:"-"`
+	URL      string                `json:"url"`
+	Username string                `json:"username"`
+	Secrets  *SecretPluginSettings `json:"-"`
 }
 
+// SecretPluginSettings holds the sensitive configuration stored in Grafana's secure credential manager.
 type SecretPluginSettings struct {
-	ApiKey string `json:"apiKey"`
+	Password string `json:"password"`
 }
 
+// LoadPluginSettings deserializes the Grafana instance settings.
 func LoadPluginSettings(source backend.DataSourceInstanceSettings) (*PluginSettings, error) {
 	settings := PluginSettings{}
 	err := json.Unmarshal(source.JSONData, &settings)
@@ -30,6 +34,6 @@ func LoadPluginSettings(source backend.DataSourceInstanceSettings) (*PluginSetti
 
 func loadSecretPluginSettings(source map[string]string) *SecretPluginSettings {
 	return &SecretPluginSettings{
-		ApiKey: source["apiKey"],
+		Password: source["password"], // Matches the frontend SecureJSONData key we will define later
 	}
 }
