@@ -1,71 +1,91 @@
 import React, { ChangeEvent } from 'react';
 import { InlineField, Input, SecretInput } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { MyDataSourceOptions, MySecureJsonData } from '../types';
+import { MediahubDataSourceOptions, MediahubSecureJsonData } from '../types';
 
-interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions, MySecureJsonData> {}
+interface Props extends DataSourcePluginOptionsEditorProps<MediahubDataSourceOptions, MediahubSecureJsonData> {}
 
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
-  const { jsonData, secureJsonFields, secureJsonData } = options;
+  const jsonData = options.jsonData;
+  const secureJsonFields = options.secureJsonFields || {};
 
-  const onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onURLChange = (event: ChangeEvent<HTMLInputElement>) => {
     onOptionsChange({
       ...options,
       jsonData: {
         ...jsonData,
-        path: event.target.value,
+        url: event.target.value,
       },
     });
   };
 
-  // Secure field (only sent to the backend)
-  const onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onUsernameChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...jsonData,
+        username: event.target.value,
+      },
+    });
+  };
+
+  const onPasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
     onOptionsChange({
       ...options,
       secureJsonData: {
-        apiKey: event.target.value,
+        ...(options.secureJsonData || {}),
+        password: event.target.value,
       },
     });
   };
 
-  const onResetAPIKey = () => {
+  const onResetPassword = () => {
     onOptionsChange({
       ...options,
       secureJsonFields: {
         ...options.secureJsonFields,
-        apiKey: false,
+        password: false,
       },
       secureJsonData: {
         ...options.secureJsonData,
-        apiKey: '',
+        password: '',
       },
     });
   };
 
   return (
-    <>
-      <InlineField label="Path" labelWidth={14} interactive tooltip={'Json field returned to frontend'}>
+    <div className="gf-form-group">
+      <h4>MediaHub API Settings</h4>
+      
+      <InlineField label="URL" labelWidth={14} tooltip="The base URL of your MediaHub instance (e.g., http://mediahub:8080)">
         <Input
-          id="config-editor-path"
-          onChange={onPathChange}
-          value={jsonData.path}
-          placeholder="Enter the path, e.g. /api/v1"
+          onChange={onURLChange}
+          value={jsonData.url || ''}
+          placeholder="http://localhost:8080"
           width={40}
         />
       </InlineField>
-      <InlineField label="API Key" labelWidth={14} interactive tooltip={'Secure json field (backend only)'}>
+
+      <InlineField label="Username" labelWidth={14}>
+        <Input
+          onChange={onUsernameChange}
+          value={jsonData.username || ''}
+          placeholder="admin"
+          width={40}
+        />
+      </InlineField>
+
+      <InlineField label="Password" labelWidth={14}>
         <SecretInput
-          required
-          id="config-editor-api-key"
-          isConfigured={secureJsonFields.apiKey}
-          value={secureJsonData?.apiKey}
-          placeholder="Enter your API key"
+          isConfigured={secureJsonFields.password}
+          value={options.secureJsonData?.password || ''}
+          placeholder="Enter password"
           width={40}
-          onReset={onResetAPIKey}
-          onChange={onAPIKeyChange}
+          onReset={onResetPassword}
+          onChange={onPasswordChange}
         />
       </InlineField>
-    </>
+    </div>
   );
 }

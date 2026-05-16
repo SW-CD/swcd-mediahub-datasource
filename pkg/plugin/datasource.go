@@ -3,40 +3,57 @@ package plugin
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"time"
+	"net/http"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
+	"github.com/swcd/mediahub/pkg/mediahub"
 	"github.com/swcd/mediahub/pkg/models"
 )
 
-// Make sure Datasource implements required interfaces. This is important to do
-// since otherwise we will only get a not implemented error response from plugin in
-// runtime. In this example datasource instance implements backend.QueryDataHandler,
-// backend.CheckHealthHandler interfaces. Plugin should not implement all these
-// interfaces - only those which are required for a particular task.
 var (
 	_ backend.QueryDataHandler      = (*Datasource)(nil)
 	_ backend.CheckHealthHandler    = (*Datasource)(nil)
+	_ backend.CallResourceHandler   = (*Datasource)(nil) // Add this interface
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
 )
 
-// NewDatasource creates a new datasource instance.
-func NewDatasource(_ context.Context, _ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	return &Datasource{}, nil
+type Datasource struct {
+	client          mediahub.Client
+	resourceHandler backend.CallResourceHandler // Holds the HTTP multiplexer
 }
 
-// Datasource is an example datasource which can respond to data queries, reports
-// its health and has streaming skills.
-type Datasource struct{}
+func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	config, err := models.LoadPluginSettings(settings)
+	if err != nil {
+		return nil, err
+	}
 
-// Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
-// created. As soon as datasource settings change detected by SDK old datasource instance will
-// be disposed and a new one will be created using NewSampleDatasource factory function.
+	client := mediahub.NewClient(config.URL, config.Username, config.Secrets.Password)
+
+	// Set up the internal router for CallResource endpoints
+	mux := http.NewServeMux()
+	ds := &Datasource{
+		client:          client,
+		resourceHandler: httpadapter.New(mux),
+	}
+
+	// Register the custom routes
+	mux.HandleFunc("/config", ds.handleConfigMap)
+	mux.HandleFunc("/file/", ds.handleFileProxy)
+	mux.HandleFunc("/preview/", ds.handlePreviewProxy)
+
+	return ds, nil
+}
+
 func (d *Datasource) Dispose() {
-	// Clean up datasource instance resources.
+	// Clean up resources if needed
+}
+
+// CallResource intercepts HTTP requests from the frontend and passes them to our ServeMux router.
+func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
+	return d.resourceHandler.CallResource(ctx, req, sender)
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -59,40 +76,46 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 	return response, nil
 }
 
-type queryModel struct{}
+// queryModel represents the JSON query sent from the React frontend.
+type queryModel struct {
+	DatabaseID     string `json:"databaseId"`
+	Model          string `json:"model"`
+	Limit          int    `json:"limit"`
+	TStart         int64  `json:"tstart"`
+	TEnd           int64  `json:"tend"`
+	AddPreviewLink bool   `json:"addPreviewLink"`
+	AddEntryLink   bool   `json:"addEntryLink"`
+}
 
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
-	var response backend.DataResponse
+func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 
-	// Unmarshal the JSON into our queryModel.
+	// 1. Unmarshal the React query into our Go struct
 	var qm queryModel
-
-	err := json.Unmarshal(query.JSON, &qm)
-	if err != nil {
-		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
+	if err := json.Unmarshal(query.JSON, &qm); err != nil {
+		return backend.ErrDataResponse(backend.StatusBadRequest, "json unmarshal: "+err.Error())
 	}
 
-	// create data frame response.
-	// For an overview on data frames and how grafana handles them:
-	// https://grafana.com/developers/plugin-tools/introduction/data-frames
-	frame := data.NewFrame("response")
+	// 2. Determine time range (use frontend overrides if provided, otherwise default to dashboard range)
+	from := query.TimeRange.From.UnixMilli()
+	to := query.TimeRange.To.UnixMilli()
+	if qm.TStart > 0 {
+		from = qm.TStart
+	}
+	if qm.TEnd > 0 {
+		to = qm.TEnd
+	}
 
-	// add fields.
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
-	)
-
-	// add the frames to the response.
-	response.Frames = append(response.Frames, frame)
-
-	return response
+	// 3. Route the query based on the selected Model
+	switch qm.Model {
+	case "get metadata table":
+		return d.handleMetadataTable(pCtx, qm, from, to)
+	// (We will add cases for 'get preview', 'get entry', and 'get audit logs' here next)
+	default:
+		return backend.ErrDataResponse(backend.StatusNotImplemented, "model not yet implemented in backend")
+	}
 }
 
 // CheckHealth handles health checks sent from Grafana to the plugin.
-// The main use case for these health checks is the test button on the
-// datasource configuration page which allows users to verify that
-// a datasource is working as expected.
 func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	res := &backend.CheckHealthResult{}
 	config, err := models.LoadPluginSettings(*req.PluginContext.DataSourceInstanceSettings)
@@ -103,14 +126,33 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 		return res, nil
 	}
 
-	if config.Secrets.ApiKey == "" {
+	// 1. Validate that all required fields are present
+	if config.URL == "" {
 		res.Status = backend.HealthStatusError
-		res.Message = "API key is missing"
+		res.Message = "URL is missing"
+		return res, nil
+	}
+	if config.Username == "" {
+		res.Status = backend.HealthStatusError
+		res.Message = "Username is missing"
+		return res, nil
+	}
+	if config.Secrets.Password == "" {
+		res.Status = backend.HealthStatusError
+		res.Message = "Password is missing"
+		return res, nil
+	}
+
+	// 2. Actively test the connection to MediaHub using our client
+	_, err = d.client.GetMe()
+	if err != nil {
+		res.Status = backend.HealthStatusError
+		res.Message = "Authentication failed: " + err.Error()
 		return res, nil
 	}
 
 	return &backend.CheckHealthResult{
 		Status:  backend.HealthStatusOk,
-		Message: "Data source is working",
+		Message: "Data source is working and authenticated successfully.",
 	}, nil
 }

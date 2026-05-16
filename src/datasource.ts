@@ -1,26 +1,23 @@
-import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
-import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
+import {
+  DataSourceInstanceSettings,
+} from '@grafana/data';
+import { DataSourceWithBackend } from '@grafana/runtime';
 
-import { MyQuery, MyDataSourceOptions, DEFAULT_QUERY } from './types';
+import { 
+  MediahubQuery, 
+  MediahubDataSourceOptions, 
+  MediahubConfigResponse 
+} from './types';
 
-export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
-  constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
+export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDataSourceOptions> {
+  constructor(instanceSettings: DataSourceInstanceSettings<MediahubDataSourceOptions>) {
     super(instanceSettings);
   }
 
-  getDefaultQuery(_: CoreApp): Partial<MyQuery> {
-    return DEFAULT_QUERY;
-  }
-
-  applyTemplateVariables(query: MyQuery, scopedVars: ScopedVars) {
-    return {
-      ...query,
-      queryText: getTemplateSrv().replace(query.queryText, scopedVars),
-    };
-  }
-
-  filterQuery(query: MyQuery): boolean {
-    // if no query has been provided, prevent the query from being executed
-    return !!query.queryText;
+  // Fetches the dynamic configuration (Admin status & Databases) for the Query Editor.
+  async getMediahubConfig(): Promise<MediahubConfigResponse> {
+    // getResource is inherited from DataSourceWithBackend and automatically routes
+    // to our Go httpadapter ServeMux
+    return this.getResource('/config');
   }
 }

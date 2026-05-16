@@ -1,1 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 81.9 71.52"><defs><style>.cls-1{fill:#84aff1;}.cls-2{fill:#3865ab;}.cls-3{fill:url(#linear-gradient);}</style><linearGradient id="linear-gradient" x1="42.95" y1="16.88" x2="81.9" y2="16.88" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f2cc0c"/><stop offset="1" stop-color="#ff9830"/></linearGradient></defs><g id="Layer_2" data-name="Layer 2"><g id="Layer_1-2" data-name="Layer 1"><path class="cls-1" d="M55.46,62.43A2,2,0,0,1,54.07,59l4.72-4.54a2,2,0,0,1,2.2-.39l3.65,1.63,3.68-3.64a2,2,0,1,1,2.81,2.84l-4.64,4.6a2,2,0,0,1-2.22.41L60.6,58.26l-3.76,3.61A2,2,0,0,1,55.46,62.43Z"/><path class="cls-2" d="M37,0H2A2,2,0,0,0,0,2V31.76a2,2,0,0,0,2,2H37a2,2,0,0,0,2-2V2A2,2,0,0,0,37,0ZM4,29.76V8.84H35V29.76Z"/><path class="cls-3" d="M79.9,0H45a2,2,0,0,0-2,2V31.76a2,2,0,0,0,2,2h35a2,2,0,0,0,2-2V2A2,2,0,0,0,79.9,0ZM47,29.76V8.84h31V29.76Z"/><path class="cls-2" d="M37,37.76H2a2,2,0,0,0-2,2V69.52a2,2,0,0,0,2,2H37a2,2,0,0,0,2-2V39.76A2,2,0,0,0,37,37.76ZM4,67.52V46.6H35V67.52Z"/><path class="cls-2" d="M79.9,37.76H45a2,2,0,0,0-2,2V69.52a2,2,0,0,0,2,2h35a2,2,0,0,0,2-2V39.76A2,2,0,0,0,79.9,37.76ZM47,67.52V46.6h31V67.52Z"/><rect class="cls-1" x="10.48" y="56.95" width="4" height="5.79"/><rect class="cls-1" x="17.43" y="53.95" width="4" height="8.79"/><rect class="cls-1" x="24.47" y="50.95" width="4" height="11.79"/><path class="cls-1" d="M19.47,25.8a6.93,6.93,0,1,1,6.93-6.92A6.93,6.93,0,0,1,19.47,25.8Zm0-9.85a2.93,2.93,0,1,0,2.93,2.93A2.93,2.93,0,0,0,19.47,16Z"/></g></g></svg>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Main Application Logo - Castle in Circle</title>
+
+  <defs>
+    <linearGradient id="circleGradient" x1="0" y1="256" x2="512" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8B5CF6"/> <stop offset="100%" stop-color="#6D28D9"/> </linearGradient>
+
+    <linearGradient id="castleGradient" x1="256" y1="180" x2="256" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#C4B5FD"/> <stop offset="100%" stop-color="#A78BFA"/> </linearGradient>
+
+    <linearGradient id="castleOutlineGradient" x1="256" y1="180" x2="256" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#6D28D9"/>
+    </linearGradient>
+
+  </defs>
+
+  <circle cx="256" cy="256" r="250" fill="url(#circleGradient)" />
+
+  <path d="M156 260V380H356V260L336 240V200H306V240L286 260L256 240L226 260L206 240V200H176V240L156 260Z" 
+        fill="url(#castleGradient)" 
+        stroke="url(#castleOutlineGradient)" 
+        stroke-width="8" 
+        stroke-linejoin="round" />
+
+  <rect x="156" y="180" width="30" height="60" fill="url(#castleGradient)" stroke="url(#castleOutlineGradient)" stroke-width="8" stroke-linejoin="round" />
+  <rect x="206" y="180" width="30" height="60" fill="url(#castleGradient)" stroke="url(#castleOutlineGradient)" stroke-width="8" stroke-linejoin="round" />
+  <rect x="276" y="180" width="30" height="60" fill="url(#castleGradient)" stroke="url(#castleOutlineGradient)" stroke-width="8" stroke-linejoin="round" />
+  <rect x="326" y="180" width="30" height="60" fill="url(#castleGradient)" stroke="url(#castleOutlineGradient)" stroke-width="8" stroke-linejoin="round" />
+
+  <path d="M256 380V320C256 308.954 264.954 300 276 300H236C224.954 300 216 308.954 216 320V380Z" fill="#8B5CF6"/>
+  <rect x="236" y="320" width="40" height="60" fill="#8B5CF6"/>
+
+</svg>

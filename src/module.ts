@@ -2,8 +2,9 @@ import { DataSourcePlugin } from '@grafana/data';
 import { DataSource } from './datasource';
 import { ConfigEditor } from './components/ConfigEditor';
 import { QueryEditor } from './components/QueryEditor';
-import { MyQuery, MyDataSourceOptions } from './types';
+import { MediahubQuery, MediahubDataSourceOptions } from './types';
 
-export const plugin = new DataSourcePlugin<DataSource, MyQuery, MyDataSourceOptions>(DataSource)
+// This binds everything together so Grafana can render it
+export const plugin = new DataSourcePlugin<DataSource, MediahubQuery, MediahubDataSourceOptions>(DataSource)
   .setConfigEditor(ConfigEditor)
   .setQueryEditor(QueryEditor);

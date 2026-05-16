@@ -1,34 +1,60 @@
-import { DataSourceJsonData } from '@grafana/data';
-import { DataQuery } from '@grafana/schema';
+import { DataQuery, DataSourceJsonData } from '@grafana/data';
 
-export interface MyQuery extends DataQuery {
-  queryText?: string;
-  constant: number;
+// ---------------------------------------------------------
+// 1. Query Editor State (What the user configures in a panel)
+// ---------------------------------------------------------
+export interface MediahubQuery extends DataQuery {
+  databaseId?: string;
+  model: 'get metadata table' | 'get preview' | 'get entry' | 'get audit logs';
+  
+  // Pagination & Time
+  tstart?: number; // Epoch ms
+  tend?: number;   // Epoch ms
+  limit?: number;
+
+  // Metadata Table Options
+  addPreviewLink?: boolean;
+  addEntryLink?: boolean;
+
+  // Preview & Entry Options
+  targetSelection?: 'get ID' | 'get last' | 'get last in range';
+  entryId?: string; // String to allow Grafana variables like ${entry_id}
+  base64?: boolean;
+  maxFileSize?: number; // In MB
 }
 
-export const DEFAULT_QUERY: Partial<MyQuery> = {
-  constant: 6.5,
+// Set sensible defaults for a new panel
+export const defaultQuery: Partial<MediahubQuery> = {
+  model: 'get metadata table',
+  limit: 50,
+  addPreviewLink: true,
+  addEntryLink: false,
+  base64: false,
+  maxFileSize: 4,
 };
 
-export interface DataPoint {
-  Time: number;
-  Value: number;
+// ---------------------------------------------------------
+// 2. Datasource Configuration (What the admin sets up)
+// ---------------------------------------------------------
+export interface MediahubDataSourceOptions extends DataSourceJsonData {
+  url?: string;
+  username?: string;
 }
 
-export interface DataSourceResponse {
-  datapoints: DataPoint[];
+export interface MediahubSecureJsonData {
+  password?: string;
 }
 
-/**
- * These are options configured for each DataSource instance
- */
-export interface MyDataSourceOptions extends DataSourceJsonData {
-  path?: string;
+// ---------------------------------------------------------
+// 3. Internal Types (Responses from our Go backend)
+// ---------------------------------------------------------
+export interface MediahubDatabase {
+  id: string;
+  name: string;
+  content_type: string;
 }
 
-/**
- * Value that is used in the backend, but never sent over HTTP to the frontend
- */
-export interface MySecureJsonData {
-  apiKey?: string;
+export interface MediahubConfigResponse {
+  is_admin: boolean;
+  databases: MediahubDatabase[];
 }

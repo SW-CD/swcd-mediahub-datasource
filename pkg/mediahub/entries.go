@@ -102,6 +102,32 @@ func (c *mediahubClient) GetEntryPreviewJSON(databaseID string, entryID int) (*P
 	return &preview, nil
 }
 
+// ProxyEntryPreview stream-proxies the raw binary preview image.
+func (c *mediahubClient) ProxyEntryPreview(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) {
+	endpoint := fmt.Sprintf("/api/database/%s/entry/%d/preview", databaseID, entryID)
+
+	token, err := c.getValidToken()
+	if err != nil {
+		return nil, fmt.Errorf("authentication failed: %w", err)
+	}
+
+	req, err := http.NewRequest("GET", c.baseURL+endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for k, v := range incomingHeaders {
+		req.Header[k] = v
+	}
+
+	// Override with internal auth and enforce standard binary response
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "*/*")
+
+	// Return the raw response so the proxy can stream it
+	return c.httpClient.Do(req)
+}
+
 // ProxyEntryFile stream-proxies the raw binary file for the "get entry" CallResource endpoint.
 // It returns the raw http.Response directly so the Grafana handler can stream the Body.
 func (c *mediahubClient) ProxyEntryFile(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) {

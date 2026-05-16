@@ -12,6 +12,17 @@ import (
 type Client interface {
 	GetMe() (*User, error)
 	GetDatabases() ([]Database, error)
+
+	// Entries
+	GetEntries(databaseID string, limit int, tstart, tend int64) ([]Entry, error)
+	GetLatestEntryID(databaseID string, tstart, tend int64) (int, error)
+	GetEntryMetadata(databaseID string, entryID int) (*Entry, error)
+	GetEntryPreviewJSON(databaseID string, entryID int) (*PreviewResponse, error)
+	ProxyEntryPreview(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) // <-- Add this
+	ProxyEntryFile(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error)
+
+	// Audit Logs
+	GetAuditLogs(limit, offset int, tstart, tend int64) ([]AuditLog, error)
 }
 
 // mediahubClient implements the Client interface.
