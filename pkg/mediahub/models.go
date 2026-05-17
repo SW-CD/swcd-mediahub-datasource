@@ -62,6 +62,13 @@ type PreviewResponse struct {
 	Data     string `json:"data"` // The base64 string
 }
 
+type FileJSONResponse struct {
+	Filename string `json:"filename"`
+	MimeType string `json:"mime_type"`
+	Size     int64  `json:"size"`
+	Data     string `json:"data"`
+}
+
 // AuditLog represents a single system audit event.
 type AuditLog struct {
 	ID        int                    `json:"id"`

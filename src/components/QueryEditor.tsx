@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { InlineField, Select, Input, Switch, Spinner } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
+import { getTemplateSrv } from '@grafana/runtime';
 import { DataSource } from '../datasource';
 import { MediahubQuery, MediahubDataSourceOptions, defaultQuery, MediahubConfigResponse } from '../types';
 
@@ -28,14 +29,24 @@ export function QueryEditor(props: Props) {
     return <div><Spinner /> Loading MediaHub Configuration...</div>;
   }
 
-  // Generate Database Options
-  const dbOptions = config?.databases.map(db => ({
+  // 1. Generate Database Options from the Backend
+  const backendDbOptions = config?.databases.map(db => ({
     label: `${db.name} (${db.content_type})`,
     value: db.id,
     contentType: db.content_type
   })) || [];
 
-  const selectedDb = dbOptions.find(db => db.value === query.databaseId);
+  // 2. Fetch Dashboard Variables and format them as options
+  const variableOptions = getTemplateSrv().getVariables().map(v => ({
+    label: `$${v.name}`,
+    value: `$${v.name}`,
+    contentType: 'unknown' // We don't know the type until runtime
+  }));
+
+  // 3. Combine them so the user sees both in the dropdown
+  const allDbOptions = [...backendDbOptions, ...variableOptions];
+
+  const selectedDb = allDbOptions.find(db => db.value === query.databaseId);
 
   // Generate Model Options based on Admin status and Content Type
   const modelOptions = [
@@ -72,10 +83,11 @@ export function QueryEditor(props: Props) {
       <div className="gf-form">
         <InlineField label="Database" labelWidth={14} grow>
           <Select
-            options={dbOptions}
+            options={allDbOptions}
             value={query.databaseId}
             onChange={(v) => onQueryPropChange('databaseId', v.value, true)}
-            placeholder="Select a database"
+            placeholder="Select a database or variable"
+            allowCustomValue={true}
           />
         </InlineField>
         
@@ -124,47 +136,53 @@ export function QueryEditor(props: Props) {
 
       {/* CONDITIONAL RENDER: Previews & Entries */}
       {(query.model === 'get preview' || query.model === 'get entry') && (
-        <div className="gf-form">
-          <InlineField label="Target" labelWidth={14}>
-            <Select
-              options={targetOptions}
-              value={query.targetSelection}
-              onChange={(v) => onQueryPropChange('targetSelection', v.value, true)}
-              width={20}
-            />
-          </InlineField>
-
-          {query.targetSelection === 'get ID' && (
-            <InlineField label="Entry ID" labelWidth={12} tooltip="Integer ID or variable like ${entry_id}">
-              <Input
-                value={query.entryId || ''}
-                onChange={(e) => onQueryPropChange('entryId', e.currentTarget.value)}
-                onBlur={onRunQuery}
-                placeholder="1234"
-                width={15}
+        <>
+          {/* Row 1: Target Selection */}
+          <div className="gf-form">
+            <InlineField label="Target" labelWidth={14}>
+              <Select
+                options={targetOptions}
+                value={query.targetSelection || 'get last'}
+                onChange={(v) => onQueryPropChange('targetSelection', v.value, true)}
+                width={20}
               />
             </InlineField>
-          )}
 
-          <InlineField label="Base64 Content" labelWidth={18} tooltip="Return raw base64 instead of a URL proxy link.">
-            <Switch
-              value={query.base64}
-              onChange={(e) => onQueryPropChange('base64', e.currentTarget.checked, true)}
-            />
-          </InlineField>
+            {query.targetSelection === 'get ID' && (
+              <InlineField label="Entry ID" labelWidth={12} tooltip="Integer ID or variable like ${entry_id}">
+                <Input
+                  value={query.entryId || ''}
+                  onChange={(e) => onQueryPropChange('entryId', e.currentTarget.value)}
+                  onBlur={onRunQuery}
+                  placeholder="1234"
+                  width={15}
+                />
+              </InlineField>
+            )}
+          </div>
 
-          {query.model === 'get entry' && (
-            <InlineField label="Max File Size (MB)" labelWidth={20} tooltip="Fails the query if the remote file exceeds this size.">
-              <Input
-                type="number"
-                value={query.maxFileSize}
-                onChange={(e) => onQueryPropChange('maxFileSize', parseFloat(e.currentTarget.value) || 4)}
-                onBlur={onRunQuery}
-                width={10}
+          {/* Row 2: Payload Modifiers */}
+          <div className="gf-form">
+            <InlineField label="Base64 Content" labelWidth={20} tooltip="Return raw base64 instead of a URL proxy link.">
+              <Switch
+                value={query.base64}
+                onChange={(e) => onQueryPropChange('base64', e.currentTarget.checked, true)}
               />
             </InlineField>
-          )}
-        </div>
+
+            {query.model === 'get entry' && (
+              <InlineField label="Max File Size (MB)" labelWidth={20} tooltip="Fails the query if the remote file exceeds this size.">
+                <Input
+                  type="number"
+                  value={query.maxFileSize}
+                  onChange={(e) => onQueryPropChange('maxFileSize', parseFloat(e.currentTarget.value) || 4)}
+                  onBlur={onRunQuery}
+                  width={10}
+                />
+              </InlineField>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

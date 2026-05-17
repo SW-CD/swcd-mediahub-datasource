@@ -31,6 +31,7 @@ export const defaultQuery: Partial<MediahubQuery> = {
   addEntryLink: false,
   base64: false,
   maxFileSize: 4,
+  targetSelection: 'get last',
 };
 
 // ---------------------------------------------------------

@@ -43,6 +43,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 	mux.HandleFunc("/config", ds.handleConfigMap)
 	mux.HandleFunc("/file/", ds.handleFileProxy)
 	mux.HandleFunc("/preview/", ds.handlePreviewProxy)
+	mux.HandleFunc("/variables/entries/", ds.handleVariableEntries) // <-- Add this
 
 	return ds, nil
 }
@@ -85,6 +86,12 @@ type queryModel struct {
 	TEnd           int64  `json:"tend"`
 	AddPreviewLink bool   `json:"addPreviewLink"`
 	AddEntryLink   bool   `json:"addEntryLink"`
+
+	// Fields for Previews and Entries
+	TargetSelection string  `json:"targetSelection"`
+	EntryID         string  `json:"entryId"`
+	Base64          bool    `json:"base64"`
+	MaxFileSize     float64 `json:"maxFileSize"`
 }
 
 func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
@@ -109,7 +116,13 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 	switch qm.Model {
 	case "get metadata table":
 		return d.handleMetadataTable(pCtx, qm, from, to)
-	// (We will add cases for 'get preview', 'get entry', and 'get audit logs' here next)
+	case "get preview":
+		return d.handlePreview(pCtx, qm, from, to)
+	case "get entry":
+		return d.handleEntry(pCtx, qm, from, to)
+	case "get audit logs":
+		// Placeholder for next step
+		return backend.ErrDataResponse(backend.StatusNotImplemented, "get audit logs not yet implemented")
 	default:
 		return backend.ErrDataResponse(backend.StatusNotImplemented, "model not yet implemented in backend")
 	}

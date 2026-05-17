@@ -36,6 +36,62 @@ func (c *mediahubClient) GetEntries(databaseID string, limit int, tstart, tend i
 	return entries, nil
 }
 
+// GetEntry retrieves all metadata for a single entry.
+func (c *mediahubClient) GetEntry(databaseID string, entryID int) (*Entry, error) {
+	endpoint := fmt.Sprintf("/api/database/%s/entry/%d", databaseID, entryID)
+
+	// Use your established authentication handler
+	respBytes, err := c.doAuthenticatedRequest("GET", endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var entry Entry
+	if err := json.Unmarshal(respBytes, &entry); err != nil {
+		return nil, fmt.Errorf("failed to decode entry JSON: %w", err)
+	}
+
+	return &entry, nil
+}
+
+// GetEntryFileJSON retrieves the file as a Base64-encoded string wrapped in JSON.
+func (c *mediahubClient) GetEntryFileJSON(databaseID string, entryID int) (*FileJSONResponse, error) {
+	endpoint := fmt.Sprintf("/api/database/%s/entry/%d/file", databaseID, entryID)
+
+	// We use getValidToken directly instead of doAuthenticatedRequest
+	// because we MUST inject the "Accept: application/json" header
+	// to trigger the API's Content Negotiation.
+	token, err := c.getValidToken()
+	if err != nil {
+		return nil, fmt.Errorf("authentication failed: %w", err)
+	}
+
+	req, err := http.NewRequest("GET", c.baseURL+endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "application/json") // Triggers the Base64 JSON response
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
+	var fileResp FileJSONResponse
+	if err := json.NewDecoder(resp.Body).Decode(&fileResp); err != nil {
+		return nil, fmt.Errorf("failed to decode base64 file JSON: %w", err)
+	}
+
+	return &fileResp, nil
+}
+
 // GetLatestEntryID handles step one of the "get last" and "get last in range" options.
 func (c *mediahubClient) GetLatestEntryID(databaseID string, tstart, tend int64) (int, error) {
 	entries, err := c.GetEntries(databaseID, 1, tstart, tend)

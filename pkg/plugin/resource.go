@@ -127,3 +127,36 @@ func (d *Datasource) handlePreviewProxy(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
 }
+
+// handleVariableEntries fetches a lightweight list of entries specifically for the Grafana variables dropdown.
+func (d *Datasource) handleVariableEntries(w http.ResponseWriter, r *http.Request) {
+	dbID := strings.TrimPrefix(r.URL.Path, "/variables/entries/")
+	if dbID == "" {
+		http.Error(w, "missing database ID", http.StatusBadRequest)
+		return
+	}
+
+	// Fetch the latest 1000 entries to populate the dropdown (bypassing time filters via 0, 0)
+	entries, err := d.client.GetEntries(dbID, 1000, 0, 0)
+	if err != nil {
+		http.Error(w, "failed to fetch entries: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// We only need the ID and Filename to populate the Grafana dropdown, so we construct a lightweight struct
+	type VariableEntry struct {
+		ID       int    `json:"id"`
+		Filename string `json:"filename"`
+	}
+
+	var res []VariableEntry
+	for _, e := range entries {
+		res = append(res, VariableEntry{
+			ID:       e.ID,
+			Filename: e.Filename,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
