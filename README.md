@@ -134,3 +134,18 @@ Below you can find source code for existing app plugins and other related docume
 - [Basic data source plugin example](https://github.com/grafana/grafana-plugin-examples/tree/master/examples/datasource-basic#readme)
 - [`plugin.json` documentation](https://grafana.com/developers/plugin-tools/reference/plugin-json)
 - [How to sign a plugin?](https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin)
+
+
+```html
+<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+    <img src="{{preview}}" alt="Entry Preview" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;" />
+</div>
+```
+
+```html
+<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+  <video src="{{entry}}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">
+    Your browser does not support the video tag.
+  </video>
+</div>
+```

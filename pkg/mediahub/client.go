@@ -20,6 +20,8 @@ type Client interface {
 	GetEntryMetadata(databaseID string, entryID int) (*Entry, error)
 	GetEntryFileJSON(databaseID string, entryID int) (*FileJSONResponse, error)
 	GetEntryPreviewJSON(databaseID string, entryID int) (*PreviewResponse, error)
+
+	// Proxy methods for Grafana to directly access entry files and previews
 	ProxyEntryPreview(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) // <-- Add this
 	ProxyEntryFile(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error)
 

@@ -12,10 +12,11 @@ import (
 	"github.com/swcd/mediahub/pkg/models"
 )
 
+// compile-time assertions to ensure Datasource implements the necessary interfaces for Grafana plugins.
 var (
 	_ backend.QueryDataHandler      = (*Datasource)(nil)
 	_ backend.CheckHealthHandler    = (*Datasource)(nil)
-	_ backend.CallResourceHandler   = (*Datasource)(nil) // Add this interface
+	_ backend.CallResourceHandler   = (*Datasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
 )
 
@@ -43,7 +44,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 	mux.HandleFunc("/config", ds.handleConfigMap)
 	mux.HandleFunc("/file/", ds.handleFileProxy)
 	mux.HandleFunc("/preview/", ds.handlePreviewProxy)
-	mux.HandleFunc("/variables/entries/", ds.handleVariableEntries) // <-- Add this
+	mux.HandleFunc("/variables/entries/", ds.handleVariableEntries)
 
 	return ds, nil
 }
@@ -121,8 +122,7 @@ func (d *Datasource) query(ctx context.Context, pCtx backend.PluginContext, quer
 	case "get entry":
 		return d.handleEntry(pCtx, qm, from, to)
 	case "get audit logs":
-		// Placeholder for next step
-		return backend.ErrDataResponse(backend.StatusNotImplemented, "get audit logs not yet implemented")
+		return d.handleAuditLogs(pCtx, qm, from, to)
 	default:
 		return backend.ErrDataResponse(backend.StatusNotImplemented, "model not yet implemented in backend")
 	}

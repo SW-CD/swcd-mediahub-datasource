@@ -70,6 +70,46 @@ export function QueryEditor(props: Props) {
     { label: 'Get Last In Range', value: 'get last in range' },
   ];
 
+  // Dedicated handler for database switching to enforce content-type rules
+  const onDatabaseChange = (v: any) => {
+    const newDbId = v.value;
+    const dbInfo = allDbOptions.find(db => db.value === newDbId);
+    const contentType = dbInfo?.contentType || 'unknown';
+
+    // Start with a copy of the current query state
+    let updatedQuery = { ...query, databaseId: newDbId };
+
+    // Apply strict defaults based on the content type
+    switch (contentType) {
+      case 'file':
+        // 1. Force disable preview generation
+        updatedQuery.addPreviewLink = false;
+        
+        // 2. Safety Net: If the user had the "Get Preview" model selected for a previous DB,
+        // kick them back to a safe model since generic files don't support previews.
+        if (updatedQuery.model === 'get preview') {
+          updatedQuery.model = 'get metadata table';
+        }
+        break;
+        
+      case 'image':
+      case 'video':
+      case 'audio':
+        // Reset to true for rich media types when switching databases
+        updatedQuery.addPreviewLink = true;
+        break;
+        
+      case 'unknown':
+        // If a variable is used (e.g., $my_db), we leave the current state alone
+        // and let the user decide with the UI toggles.
+        break;
+    }
+
+    // Push the sanitized query state to Grafana and run it
+    onChange(updatedQuery);
+    onRunQuery();
+  };
+
   // Universal handler for updating query state
   const onQueryPropChange = (prop: keyof MediahubQuery, value: any, runQuery = false) => {
     onChange({ ...query, [prop]: value });
@@ -85,7 +125,7 @@ export function QueryEditor(props: Props) {
           <Select
             options={allDbOptions}
             value={query.databaseId}
-            onChange={(v) => onQueryPropChange('databaseId', v.value, true)}
+            onChange={onDatabaseChange}
             placeholder="Select a database or variable"
             allowCustomValue={true}
           />

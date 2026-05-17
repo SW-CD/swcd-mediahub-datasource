@@ -36,6 +36,23 @@ export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDat
     return this.getResource('/config');
   }
 
+  // Grafana calls this before executing any query. 
+  // If it returns false, the query is cleanly aborted without throwing an error.
+  filterQuery(query: MediahubQuery): boolean {
+    // If no database ID is selected (or if it's an empty string), block the query.
+    if (!query.databaseId) {
+      return false;
+    }
+    
+    // Optionally, if you want to ensure the entry ID is present for "Get ID" targets:
+    if ((query.model === 'get preview' || query.model === 'get entry') && 
+        query.targetSelection === 'get ID' && !query.entryId) {
+      return false;
+    }
+
+    return true;
+  }
+
   // This method is called automatically when you click "Run Query" in the Dashboard Variables settings.
   async metricFindQuery(query: string, options?: any): Promise<MetricFindValue[]> {
     if (!query) {
