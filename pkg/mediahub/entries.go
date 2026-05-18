@@ -158,6 +158,32 @@ func (c *mediahubClient) GetEntryPreviewJSON(databaseID string, entryID int) (*P
 	return &preview, nil
 }
 
+// ProxyEntryFile stream-proxies the raw binary file for the "get entry" CallResource endpoint.
+func (c *mediahubClient) ProxyEntryFile(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) {
+	endpoint := fmt.Sprintf("/api/database/%s/entry/%d/file", databaseID, entryID)
+
+	token, err := c.getValidToken()
+	if err != nil {
+		return nil, fmt.Errorf("authentication failed: %w", err)
+	}
+
+	req, err := http.NewRequest("GET", c.baseURL+endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only extract and forward the 'Range' header.
+	if rangeHeader := incomingHeaders.Get("Range"); rangeHeader != "" {
+		req.Header.Set("Range", rangeHeader)
+	}
+
+	// Override with our internal auth and ensure standard binary response
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Accept", "*/*")
+
+	return c.httpClient.Do(req)
+}
+
 // ProxyEntryPreview stream-proxies the raw binary preview image.
 func (c *mediahubClient) ProxyEntryPreview(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) {
 	endpoint := fmt.Sprintf("/api/database/%s/entry/%d/preview", databaseID, entryID)
@@ -172,42 +198,14 @@ func (c *mediahubClient) ProxyEntryPreview(databaseID string, entryID int, incom
 		return nil, err
 	}
 
-	for k, v := range incomingHeaders {
-		req.Header[k] = v
+	// For previews, we generally don't need any frontend headers except maybe caching.
+	// We specifically avoid copying the whole map to prevent side-effects.
+	if ifNoneMatch := incomingHeaders.Get("If-None-Match"); ifNoneMatch != "" {
+		req.Header.Set("If-None-Match", ifNoneMatch)
 	}
 
-	// Override with internal auth and enforce standard binary response
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "*/*")
 
-	// Return the raw response so the proxy can stream it
-	return c.httpClient.Do(req)
-}
-
-// ProxyEntryFile stream-proxies the raw binary file for the "get entry" CallResource endpoint.
-// It returns the raw http.Response directly so the Grafana handler can stream the Body.
-func (c *mediahubClient) ProxyEntryFile(databaseID string, entryID int, incomingHeaders http.Header) (*http.Response, error) {
-	endpoint := fmt.Sprintf("/api/database/%s/entry/%d/file", databaseID, entryID)
-
-	token, err := c.getValidToken()
-	if err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
-	}
-
-	req, err := http.NewRequest("GET", c.baseURL+endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Forward all relevant headers from the original Grafana request (crucial for Range / video seeking)
-	for k, v := range incomingHeaders {
-		req.Header[k] = v
-	}
-
-	// Override with our internal auth and ensure standard binary response
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Accept", "*/*")
-
-	// We return the raw response; the caller MUST defer resp.Body.Close()
 	return c.httpClient.Do(req)
 }

@@ -53,6 +53,7 @@ type Entry struct {
 	MimeType     string                 `json:"mime_type"`
 	Filename     string                 `json:"filename"`
 	Status       string                 `json:"status"`
+	MediaFields  map[string]interface{} `json:"media_fields,omitempty"`
 	CustomFields map[string]interface{} `json:"custom_fields,omitempty"`
 }
 

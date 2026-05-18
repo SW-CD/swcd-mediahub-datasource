@@ -62,7 +62,6 @@ func (d *Datasource) handleEntry(pCtx backend.PluginContext, qm queryModel, from
 	// 4. Generate the Entry Data
 	var entryValue string
 	if qm.Base64 {
-		// Note: Ensure you have a GetEntryFileJSON method in your client for this
 		fileJSON, err := d.client.GetEntryFileJSON(qm.DatabaseID, entryID)
 		if err != nil {
 			response.Error = fmt.Errorf("failed to fetch base64 file: %w", err)
@@ -70,8 +69,12 @@ func (d *Datasource) handleEntry(pCtx backend.PluginContext, qm queryModel, from
 		}
 		entryValue = fileJSON.Data
 	} else {
-		// Target the proxy route we built in resource.go
-		entryValue = fmt.Sprintf("/api/datasources/uid/%s/resources/file/%s/%d", pCtx.DataSourceInstanceSettings.UID, qm.DatabaseID, entryID)
+		entryValue = fmt.Sprintf("/api/datasources/uid/%s/resources/file/%s/%d?max_size=%f",
+			pCtx.DataSourceInstanceSettings.UID,
+			qm.DatabaseID,
+			entryID,
+			qm.MaxFileSize,
+		)
 	}
 
 	// 5. Construct the DataFrame

@@ -41,18 +41,28 @@ func (d *Datasource) handleMetadataTable(pCtx backend.PluginContext, qm queryMod
 		previewLinks = make([]string, length)
 	}
 
-	// Dynamic Custom Fields: Find all unique custom keys across the dataset
+	// 1. Dynamic Custom Fields
 	customKeys := make(map[string]bool)
 	for _, e := range entries {
 		for k := range e.CustomFields {
 			customKeys[k] = true
 		}
 	}
-
-	// Prepare slices for each custom field
 	customColumns := make(map[string][]string)
 	for k := range customKeys {
 		customColumns[k] = make([]string, length)
+	}
+
+	// 2. Dynamic Media Fields
+	mediaKeys := make(map[string]bool)
+	for _, e := range entries {
+		for k := range e.MediaFields {
+			mediaKeys[k] = true
+		}
+	}
+	mediaColumns := make(map[string][]string)
+	for k := range mediaKeys {
+		mediaColumns[k] = make([]string, length)
 	}
 
 	// Populate the rows
@@ -65,21 +75,33 @@ func (d *Datasource) handleMetadataTable(pCtx backend.PluginContext, qm queryMod
 		statuses[i] = e.Status
 
 		if qm.AddEntryLink {
-			// Construct the dynamic proxy URL for the raw file
-			entryLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/file/%s/%d", pCtx.DataSourceInstanceSettings.UID, qm.DatabaseID, e.ID)
+			entryLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/file/%s/%d?max_size=%f",
+				pCtx.DataSourceInstanceSettings.UID,
+				qm.DatabaseID,
+				e.ID,
+				qm.MaxFileSize,
+			)
 		}
 
 		if qm.AddPreviewLink {
-			// Construct the dynamic proxy URL for the preview image
 			previewLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/preview/%s/%d", pCtx.DataSourceInstanceSettings.UID, qm.DatabaseID, e.ID)
 		}
 
-		// Populate custom fields (converting all values to strings for safety in tables)
+		// Populate custom fields
 		for k := range customKeys {
 			if val, exists := e.CustomFields[k]; exists {
 				customColumns[k][i] = fmt.Sprintf("%v", val)
 			} else {
-				customColumns[k][i] = "" // Empty string if the field doesn't exist on this specific entry
+				customColumns[k][i] = ""
+			}
+		}
+
+		// NEW: Populate media fields
+		for k := range mediaKeys {
+			if val, exists := e.MediaFields[k]; exists {
+				mediaColumns[k][i] = fmt.Sprintf("%v", val)
+			} else {
+				mediaColumns[k][i] = ""
 			}
 		}
 	}
@@ -97,6 +119,11 @@ func (d *Datasource) handleMetadataTable(pCtx backend.PluginContext, qm queryMod
 	// Append custom fields
 	for k, col := range customColumns {
 		frame.Fields = append(frame.Fields, data.NewField("custom_"+k, nil, col))
+	}
+
+	// Append media fields
+	for k, col := range mediaColumns {
+		frame.Fields = append(frame.Fields, data.NewField("media_"+k, nil, col))
 	}
 
 	// Append link columns with UI hints

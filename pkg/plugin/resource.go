@@ -66,7 +66,7 @@ func (d *Datasource) handleFileProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if meta.Filesize > maxSizeBytes {
+	if maxSizeBytes > 0 && meta.Filesize > maxSizeBytes {
 		http.Error(w, "file exceeds the configured maximum size limit", http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -79,7 +79,12 @@ func (d *Datasource) handleFileProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// 5. Copy all headers from the MediaHub response to Grafana (crucial for Range/video playback)
+	// Clear any default headers Grafana might have set (like an incorrect Content-Type)
+	for k := range w.Header() {
+		w.Header().Del(k)
+	}
+
+	// Copy all headers from the MediaHub response to Grafana
 	for key, values := range resp.Header {
 		for _, value := range values {
 			w.Header().Add(key, value)
@@ -116,6 +121,11 @@ func (d *Datasource) handlePreviewProxy(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	defer resp.Body.Close()
+
+	// Clear any default headers Grafana might have set
+	for k := range w.Header() {
+		w.Header().Del(k)
+	}
 
 	// Copy all headers (like Content-Type: image/webp and Cache-Control)
 	for key, values := range resp.Header {

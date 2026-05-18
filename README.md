@@ -149,3 +149,11 @@ Below you can find source code for existing app plugins and other related docume
   </video>
 </div>
 ```
+
+```html
+<div style="display: flex; justify-content: center; align-items: center; height: 100%; padding: 10px;">
+  <audio src="{{entry}}" controls style="width: 100%; max-width: 400px;">
+    Your browser does not support the audio element.
+  </audio>
+</div>
+```
