@@ -1,8 +1,11 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -98,4 +101,50 @@ func (d *Datasource) handleEntry(pCtx backend.PluginContext, qm queryModel, from
 
 	response.Frames = append(response.Frames, frame)
 	return response
+}
+
+// handleVariableEntries fetches a lightweight list of entries specifically for the Grafana variables dropdown.
+func (d *Datasource) handleVariableEntries(w http.ResponseWriter, r *http.Request) {
+	dbID := strings.TrimPrefix(r.URL.Path, "/variables/entries/")
+	if dbID == "" {
+		http.Error(w, "missing database ID", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Read optional time boundaries from the URL query params
+	var from, to int64
+	if fromStr := r.URL.Query().Get("from"); fromStr != "" {
+		if val, err := strconv.ParseInt(fromStr, 10, 64); err == nil {
+			from = val
+		}
+	}
+	if toStr := r.URL.Query().Get("to"); toStr != "" {
+		if val, err := strconv.ParseInt(toStr, 10, 64); err == nil {
+			to = val
+		}
+	}
+
+	// 2. Pass the parsed time parameters to GetEntries (instead of hardcoding 0, 0)
+	entries, err := d.client.GetEntries(dbID, 1000, from, to)
+	if err != nil {
+		http.Error(w, "failed to fetch entries: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// We only need the ID and Filename to populate the Grafana dropdown, so we construct a lightweight struct
+	type VariableEntry struct {
+		ID       int    `json:"id"`
+		Filename string `json:"filename"`
+	}
+
+	var res []VariableEntry
+	for _, e := range entries {
+		res = append(res, VariableEntry{
+			ID:       e.ID,
+			Filename: e.Filename,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
 }

@@ -59,3 +59,12 @@ export interface MediahubConfigResponse {
   is_admin: boolean;
   databases: MediahubDatabase[];
 }
+
+// ---------------------------------------------------------
+// 4. Variable Query (Custom UI state)
+// ---------------------------------------------------------
+export interface MediahubVariableQuery extends DataQuery {
+  command: 'databases' | 'database_names' | 'database_ulids' | 'entries';
+  databaseId?: string; 
+  useTimeFilter?: boolean; 
+}
