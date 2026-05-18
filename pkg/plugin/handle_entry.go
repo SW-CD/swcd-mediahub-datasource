@@ -3,10 +3,10 @@ package plugin
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/swcd/mediahub/pkg/mediahub"
 )
 
 func (d *Datasource) handleEntry(pCtx backend.PluginContext, qm queryModel, from, to int64) backend.DataResponse {
@@ -43,7 +43,7 @@ func (d *Datasource) handleEntry(pCtx backend.PluginContext, qm queryModel, from
 		return response
 	}
 
-	// 2. Fetch metadata for Timestamp and Size Checking
+	// 2. Fetch metadata for Timestamp, Size Checking, and general fields
 	entryMeta, err := d.client.GetEntry(qm.DatabaseID, entryID)
 	if err != nil {
 		response.Error = fmt.Errorf("failed to fetch entry metadata: %w", err)
@@ -80,12 +80,10 @@ func (d *Datasource) handleEntry(pCtx backend.PluginContext, qm queryModel, from
 	// 5. Construct the DataFrame
 	frame := data.NewFrame("entry")
 
-	// Timestamp First
-	frame.Fields = append(frame.Fields, data.NewField("time", nil, []time.Time{time.UnixMilli(entryMeta.Timestamp).UTC()}))
-	frame.Fields = append(frame.Fields, data.NewField("id", nil, []int64{int64(entryID)}))
+	// Append ALL metadata fields using our shared utility function
+	frame.Fields = append(frame.Fields, buildMetadataFields([]mediahub.Entry{*entryMeta})...)
 
-	// Because the entry could be a Video or Audio file, we don't force "displayMode": "image" here.
-	// Instead, we inject a DataLink so it can be clicked, or parsed by the Business Text Panel!
+	// Append the dedicated Entry field (URL or Base64) with clickable links
 	entryField := data.NewField("entry", nil, []string{entryValue})
 	entryField.Config = &data.FieldConfig{
 		Links: []data.DataLink{

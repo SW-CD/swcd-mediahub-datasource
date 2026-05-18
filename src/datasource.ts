@@ -33,7 +33,7 @@ export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDat
 
   // Fetches the dynamic configuration (Admin status & Databases) for the Query Editor.
   async getMediahubConfig(): Promise<MediahubConfigResponse> {
-    return this.getResource('/config');
+    return this.getResource('config');
   }
 
   // Grafana calls this before executing any query. 
@@ -54,16 +54,22 @@ export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDat
   }
 
   // This method is called automatically when you click "Run Query" in the Dashboard Variables settings.
-  async metricFindQuery(query: string, options?: any): Promise<MetricFindValue[]> {
+  async metricFindQuery(query: any, options?: any): Promise<MetricFindValue[]> {
     if (!query) {
       return [];
     }
 
+    // Safely extract the query string whether Grafana passed a string or a query object
+    const rawQuery = typeof query === 'string' ? query : (query.query || '');
+    
+    if (!rawQuery) {
+      return [];
+    }
+
     const templateSrv = getTemplateSrv();
-    const interpolatedQuery = templateSrv.replace(query.trim(), options?.scopedVars);
+    const interpolatedQuery = templateSrv.replace(rawQuery.trim(), options?.scopedVars);
     const command = interpolatedQuery.toLowerCase();
 
-    // Command 1: "databases" (The Hybrid: Shows Name, Uses ULID)
     if (command === 'databases') {
       const config = await this.getMediahubConfig();
       return config.databases.map((db) => ({
@@ -72,7 +78,6 @@ export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDat
       }));
     }
 
-    // Command 2: "database_names" (Shows Name, Uses Name)
     if (command === 'database_names') {
       const config = await this.getMediahubConfig();
       return config.databases.map((db) => ({
@@ -81,7 +86,6 @@ export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDat
       }));
     }
 
-    // Command 3: "database_ulids" (Shows ULID, Uses ULID)
     if (command === 'database_ulids') {
       const config = await this.getMediahubConfig();
       return config.databases.map((db) => ({
@@ -90,11 +94,10 @@ export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDat
       }));
     }
 
-    // Command 4: "entries <database_id>"
     if (command.startsWith('entries ')) {
       const dbId = interpolatedQuery.substring(8).trim();
       try {
-        const entries = await this.getResource(`/variables/entries/${dbId}`);
+        const entries = await this.getResource(`variables/entries/${dbId}`);
         return entries.map((e: { id: number; filename: string }) => ({
           text: `${e.filename} (ID: ${e.id})`,
           value: String(e.id),

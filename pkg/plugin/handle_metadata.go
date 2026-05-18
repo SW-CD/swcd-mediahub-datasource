@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -21,135 +20,63 @@ func (d *Datasource) handleMetadataTable(pCtx backend.PluginContext, qm queryMod
 
 	frame := data.NewFrame("metadata")
 
-	// Initialize column slices
+	// 1. Generate all standard metadata fields using our shared utility
+	frame.Fields = append(frame.Fields, buildMetadataFields(entries)...)
+
+	// 2. Generate Link Columns (if requested by the user)
 	length := len(entries)
-	times := make([]time.Time, length)
-	ids := make([]int64, length)
-	filenames := make([]string, length)
-	filesizes := make([]int64, length)
-	mimetypes := make([]string, length)
-	statuses := make([]string, length)
-
-	// Optional Link Columns
-	var entryLinks []string
-	if qm.AddEntryLink {
-		entryLinks = make([]string, length)
-	}
-
-	var previewLinks []string
-	if qm.AddPreviewLink {
-		previewLinks = make([]string, length)
-	}
-
-	// 1. Dynamic Custom Fields
-	customKeys := make(map[string]bool)
-	for _, e := range entries {
-		for k := range e.CustomFields {
-			customKeys[k] = true
-		}
-	}
-	customColumns := make(map[string][]string)
-	for k := range customKeys {
-		customColumns[k] = make([]string, length)
-	}
-
-	// 2. Dynamic Media Fields
-	mediaKeys := make(map[string]bool)
-	for _, e := range entries {
-		for k := range e.MediaFields {
-			mediaKeys[k] = true
-		}
-	}
-	mediaColumns := make(map[string][]string)
-	for k := range mediaKeys {
-		mediaColumns[k] = make([]string, length)
-	}
-
-	// Populate the rows
-	for i, e := range entries {
-		times[i] = time.UnixMilli(e.Timestamp).UTC()
-		ids[i] = int64(e.ID)
-		filenames[i] = e.Filename
-		filesizes[i] = e.Filesize
-		mimetypes[i] = e.MimeType
-		statuses[i] = e.Status
+	if qm.AddPreviewLink || qm.AddEntryLink {
+		var entryLinks, previewLinks []string
 
 		if qm.AddEntryLink {
-			entryLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/file/%s/%d?max_size=%f",
-				pCtx.DataSourceInstanceSettings.UID,
-				qm.DatabaseID,
-				e.ID,
-				qm.MaxFileSize,
-			)
+			entryLinks = make([]string, length)
 		}
-
 		if qm.AddPreviewLink {
-			previewLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/preview/%s/%d", pCtx.DataSourceInstanceSettings.UID, qm.DatabaseID, e.ID)
+			previewLinks = make([]string, length)
 		}
 
-		// Populate custom fields
-		for k := range customKeys {
-			if val, exists := e.CustomFields[k]; exists {
-				customColumns[k][i] = fmt.Sprintf("%v", val)
-			} else {
-				customColumns[k][i] = ""
+		for i, e := range entries {
+			if qm.AddEntryLink {
+				entryLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/file/%s/%d?max_size=%f",
+					pCtx.DataSourceInstanceSettings.UID,
+					qm.DatabaseID,
+					e.ID,
+					qm.MaxFileSize,
+				)
+			}
+			if qm.AddPreviewLink {
+				previewLinks[i] = fmt.Sprintf("/api/datasources/uid/%s/resources/preview/%s/%d",
+					pCtx.DataSourceInstanceSettings.UID,
+					qm.DatabaseID,
+					e.ID,
+				)
 			}
 		}
 
-		// NEW: Populate media fields
-		for k := range mediaKeys {
-			if val, exists := e.MediaFields[k]; exists {
-				mediaColumns[k][i] = fmt.Sprintf("%v", val)
-			} else {
-				mediaColumns[k][i] = ""
-			}
-		}
-	}
-
-	// Append core fields to the frame
-	frame.Fields = append(frame.Fields,
-		data.NewField("timestamp", nil, times),
-		data.NewField("id", nil, ids),
-		data.NewField("filename", nil, filenames),
-		data.NewField("filesize", nil, filesizes),
-		data.NewField("mime_type", nil, mimetypes),
-		data.NewField("status", nil, statuses),
-	)
-
-	// Append custom fields
-	for k, col := range customColumns {
-		frame.Fields = append(frame.Fields, data.NewField("custom_"+k, nil, col))
-	}
-
-	// Append media fields
-	for k, col := range mediaColumns {
-		frame.Fields = append(frame.Fields, data.NewField("media_"+k, nil, col))
-	}
-
-	// Append link columns with UI hints
-	if qm.AddPreviewLink {
-		previewField := data.NewField("preview_link", nil, previewLinks)
-		previewField.Config = &data.FieldConfig{
-			Custom: map[string]interface{}{
-				"displayMode": "image", // Forces the Table panel to render an <img> tag
-			},
-		}
-		frame.Fields = append(frame.Fields, previewField)
-	}
-
-	if qm.AddEntryLink {
-		entryField := data.NewField("entry_link", nil, entryLinks)
-		entryField.Config = &data.FieldConfig{
-			// Automatically turns the cell text into a clickable link
-			Links: []data.DataLink{
-				{
-					Title:       "Open File",
-					URL:         "${__value.raw}", // Grafana variable pointing to the cell's text
-					TargetBlank: true,             // Opens in a new tab
+		// Append link columns with UI hints
+		if qm.AddPreviewLink {
+			previewField := data.NewField("preview_link", nil, previewLinks)
+			previewField.Config = &data.FieldConfig{
+				Custom: map[string]interface{}{
+					"displayMode": "image",
 				},
-			},
+			}
+			frame.Fields = append(frame.Fields, previewField)
 		}
-		frame.Fields = append(frame.Fields, entryField)
+
+		if qm.AddEntryLink {
+			entryField := data.NewField("entry_link", nil, entryLinks)
+			entryField.Config = &data.FieldConfig{
+				Links: []data.DataLink{
+					{
+						Title:       "Open File",
+						URL:         "${__value.raw}",
+						TargetBlank: true,
+					},
+				},
+			}
+			frame.Fields = append(frame.Fields, entryField)
+		}
 	}
 
 	response.Frames = append(response.Frames, frame)
