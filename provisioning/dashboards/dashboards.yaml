@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'MediaHub Test Dashboards'
+    orgId: 1
+    folder: 'MediaHub' # This will create a nice folder in the UI for your testers
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10 # Grafana will live-reload changes to the JSON every 10s!
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

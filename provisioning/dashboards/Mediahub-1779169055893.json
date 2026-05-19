@@ -1,0 +1,289 @@
+{
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.4.0"
+    },
+    {
+      "type": "panel",
+      "id": "marcusolsson-dynamictext-panel",
+      "name": "Business Text",
+      "version": "6.2.0"
+    },
+    {
+      "type": "datasource",
+      "id": "swcd-mediahub-datasource",
+      "name": "Mediahub",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "swcd-mediahub-datasource",
+        "uid": "mediahub-test-ds"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 13,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "lg",
+        "enablePagination": true,
+        "showHeader": true
+      },
+      "pluginVersion": "12.4.0",
+      "targets": [
+        {
+          "addEntryLink": false,
+          "addPreviewLink": true,
+          "base64": false,
+          "databaseId": "$Database",
+          "datasource": {
+            "type": "swcd-mediahub-datasource",
+            "uid": "mediahub-test-ds"
+          },
+          "limit": 50,
+          "maxFileSize": 4,
+          "model": "get metadata table",
+          "refId": "A",
+          "targetSelection": "get last"
+        }
+      ],
+      "title": "Metdata Table",
+      "transformations": [
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "id",
+                "filesize",
+                "preview_link",
+                "time",
+                "mime_type"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {
+              "filesize": 3,
+              "id": 1,
+              "mime_type": 4,
+              "preview_link": 0,
+              "time": 2
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "swcd-mediahub-datasource",
+        "uid": "mediahub-test-ds"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 13,
+        "w": 11,
+        "x": 13,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "afterRender": "",
+        "content": "<div style=\"display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;\">\n\n  {{#if (contains mime_type \"video/\")}}\n  <video src=\"{{entry}}\" controls\n    style=\"max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;\"></video>\n\n  {{else if (contains mime_type \"audio/\")}}\n  <audio src=\"{{entry}}\" controls style=\"width: 100%; max-width: 400px;\"></audio>\n\n  {{else if (contains mime_type \"image/\")}}\n  <img src=\"{{entry}}\" style=\"max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;\" />\n\n  {{else}}\n  <a href=\"{{entry}}\" target=\"_blank\"\n    style=\"padding: 10px 20px; background-color: #3274D9; color: white; border-radius: 4px; text-decoration: none; font-weight: bold; font-family: sans-serif;\">\n    Download File\n  </a>\n  {{/if}}\n\n</div>",
+        "contentPartials": [],
+        "defaultContent": "The query didn't return any results.",
+        "editor": {
+          "format": "auto",
+          "language": "html"
+        },
+        "editors": [],
+        "externalStyles": [],
+        "helpers": "",
+        "renderMode": "everyRow",
+        "styles": "",
+        "wrap": true
+      },
+      "pluginVersion": "6.2.0",
+      "targets": [
+        {
+          "addEntryLink": false,
+          "addPreviewLink": true,
+          "base64": false,
+          "databaseId": "$Database",
+          "entryId": "$EntryID",
+          "limit": 50,
+          "maxFileSize": 100,
+          "model": "get entry",
+          "refId": "A",
+          "targetSelection": "get ID",
+          "datasource": {
+            "type": "swcd-mediahub-datasource",
+            "uid": "mediahub-test-ds"
+          }
+        }
+      ],
+      "type": "marcusolsson-dynamictext-panel"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "swcd-mediahub-datasource",
+          "uid": "mediahub-test-ds"
+        },
+        "definition": "databases",
+        "description": "",
+        "name": "Database",
+        "options": [],
+        "query": "databases",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "swcd-mediahub-datasource",
+          "uid": "mediahub-test-ds"
+        },
+        "definition": "",
+        "description": "",
+        "name": "EntryID",
+        "options": [],
+        "query": {
+          "0": "e",
+          "1": "n",
+          "2": "t",
+          "3": "r",
+          "4": "i",
+          "5": "e",
+          "6": "s",
+          "7": " ",
+          "8": "$",
+          "9": "D",
+          "10": "a",
+          "11": "t",
+          "12": "a",
+          "13": "b",
+          "14": "a",
+          "15": "s",
+          "16": "e",
+          "command": "entries",
+          "databaseId": "$Database",
+          "useTimeFilter": true
+        },
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6M",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Mediahub",
+  "uid": "adxhr5c",
+  "version": 14,
+  "weekStart": ""
+}

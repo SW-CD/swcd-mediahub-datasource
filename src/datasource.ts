@@ -40,6 +40,9 @@ export class MediahubVariableSupport extends CustomVariableSupport<DataSource, M
 }
 
 export class DataSource extends DataSourceWithBackend<MediahubQuery, MediahubDataSourceOptions> {
+
+  annotations = {};
+  
   constructor(instanceSettings: DataSourceInstanceSettings<MediahubDataSourceOptions>) {
     super(instanceSettings);
     // 2. Wire up the instantiated Variable Support subclass here

@@ -1,14 +1,16 @@
 apiVersion: 1
 
 datasources:
-  - name: 'Mediahub'
+  - name: 'MediaHub'
     type: 'swcd-mediahub-datasource'
+    uid: 'mediahub-test-ds'
     access: proxy
-    isDefault: false
+    isDefault: true
     orgId: 1
     version: 1
     editable: true
     jsonData:
-      path: '/resources'
+      url: '${MEDIAHUB_URL}'
+      username: '${MEDIAHUB_USERNAME}'
     secureJsonData:
-      apiKey: 'api-key'
+      password: '${MEDIAHUB_PASSWORD}'

@@ -1,159 +1,80 @@
-# Grafana data source plugin template
+# MediaHub Data Source for Grafana
 
-This template is a starting point for building a Data Source Plugin for Grafana.
+The MediaHub Data Source plugin allows you to seamlessly integrate **MediaHub OSS** with your Grafana dashboards. This plugin goes beyond standard numerical metrics, enabling you to query media metadata, securely stream high-fidelity files (video, audio, images), and monitor system audit logs directly within Grafana.
 
-## What are Grafana data source plugins?
+---
 
-Grafana supports a wide range of data sources, including Prometheus, MySQL, and even Datadog. There’s a good chance you can already visualize metrics from the systems you have set up. In some cases, though, you already have an in-house metrics solution that you’d like to add to your Grafana dashboards. Grafana Data Source Plugins enables integrating such solutions with Grafana.
+## Features
 
-## Getting started
+* **Rich Media Proxying:** Securely stream images, audio, and video files directly into Grafana panels without exposing your MediaHub API to the public internet. Supports HTTP Range requests for smooth video scrubbing.
+* **Dynamic Metadata Tables:** Query and flatten complex metadata (including custom dynamic fields) into structured Grafana DataFrames.
+* **Dashboard Variables:** Fully supports Grafana template variables for dynamic database selection and filtering.
+* **Smart Content Handling:** Automatically detects content types (`mime_type`) and applies intelligent defaults (e.g., disabling preview generation for generic files to save bandwidth).
+* **Audit Trail Monitoring:** Built-in support for fetching and displaying the MediaHub system audit log (requires Admin privileges).
 
-### Backend
+---
 
-1. Update [Grafana plugin SDK for Go](https://grafana.com/developers/plugin-tools/key-concepts/backend-plugins/grafana-plugin-sdk-for-go) dependency to the latest minor version:
+## Configuration
 
-   ```bash
-   go get -u github.com/grafana/grafana-plugin-sdk-go
-   go mod tidy
-   ```
+To connect the data source to your MediaHub instance, navigate to **Connections > Data sources > Add new data source** and select **MediaHub**.
 
-2. Build plugin backend binaries for Linux, Windows and Darwin:
+You will need the following information:
 
-   ```bash
-   mage -v
-   ```
+1. **MediaHub URL:** The base URL of your MediaHub instance (e.g., `https://mediahub.internal.com`).
+2. **Client ID:** A valid OAuth2 / API Client ID generated within MediaHub.
+3. **Client Secret:** The corresponding secret for authentication.
 
-3. List all available Mage targets for additional commands:
+Click **Save & test**. The plugin will perform an authentication handshake and verify the connection.
 
-   ```bash
-   mage -l
-   ```
+---
 
-### Frontend
+## Query Models
 
-1. Install dependencies
+The Query Editor provides three primary modes of operation depending on the data you wish to visualize:
 
-   ```bash
-   npm install
-   ```
+### 1. Get Metadata Table
+Retrieves a paginated list of entries from a specific database. 
+* **Target:** Specify a search query (e.g., `artist = "Demo"`) or leave blank for all entries.
+* **Preview Links:** For supported media databases (Image, Video, Audio), you can toggle the generation of a direct proxy link to display thumbnails or media in table cells.
 
-2. Build plugin in development mode and run in watch mode
+### 2. Get Preview / Entry
+Fetches a specific media file by its Entry ID. This is typically used with dynamic dashboard variables to display the details of a single selected file.
+* **Target Selection:** Choose "Get ID" to query a specific entry ID.
+* **Base64 Content:** Optionally encode the media directly into the data frame (best for small thumbnails). Leave this disabled to use the high-performance URL proxy for large files like video and audio.
 
-   ```bash
-   npm run dev
-   ```
+### 3. Get Audit Logs
+Retrieves the system audit trail. The data is formatted with a localized timestamp and a stringified JSON details column for easy viewing in a standard Table panel. *(Note: The authenticated user must have the `IsAdmin` global role in MediaHub to use this model).*
 
-3. Build plugin in production mode
+---
 
-   ```bash
-   npm run build
-   ```
+## Displaying Media in Dashboards
 
-4. Run the tests (using Jest)
+To render dynamic media (Images, Video, Audio, or Download buttons for generic files) directly inside a dashboard, we highly recommend using the **Business Text Panel** (formerly Dynamic Text Panel by Volkov Labs).
 
-   ```bash
-   # Runs the tests and watches for changes, requires git init first
-   npm run test
+Because the MediaHub plugin automatically exposes the `mime_type` in the DataFrame, you can use pure Handlebars templating without enabling Grafana's `disable_sanitize_html` security override.
 
-   # Exits after running all the tests
-   npm run test:ci
-   ```
-
-5. Spin up a Grafana instance and run the plugin inside it (using Docker)
-
-   ```bash
-   npm run server
-   ```
-
-6. Run the E2E tests (using Playwright)
-
-   ```bash
-   # Spins up a Grafana instance first that we tests against
-   npm run server
-
-   # If you wish to start a certain Grafana version. If not specified will use latest by default
-   GRAFANA_VERSION=11.3.0 npm run server
-
-   # Starts the tests
-   npm run e2e
-   ```
-
-7. Run the linter
-
-   ```bash
-   npm run lint
-
-   # or
-
-   npm run lint:fix
-   ```
-
-# Distributing your plugin
-
-When distributing a Grafana plugin either within the community or privately the plugin must be signed so the Grafana application can verify its authenticity. This can be done with the `@grafana/sign-plugin` package.
-
-_Note: It's not necessary to sign a plugin during development. The docker development environment that is scaffolded with `@grafana/create-plugin` caters for running the plugin without a signature._
-
-## Initial steps
-
-Before signing a plugin please read the Grafana [plugin publishing and signing criteria](https://grafana.com/legal/plugins/#plugin-publishing-and-signing-criteria) documentation carefully.
-
-`@grafana/create-plugin` has added the necessary commands and workflows to make signing and distributing a plugin via the grafana plugins catalog as straightforward as possible.
-
-Before signing a plugin for the first time please consult the Grafana [plugin signature levels](https://grafana.com/legal/plugins/#what-are-the-different-classifications-of-plugins) documentation to understand the differences between the types of signature level.
-
-1. Create a [Grafana Cloud account](https://grafana.com/signup).
-2. Make sure that the first part of the plugin ID matches the slug of your Grafana Cloud account.
-   - _You can find the plugin ID in the `plugin.json` file inside your plugin directory. For example, if your account slug is `acmecorp`, you need to prefix the plugin ID with `acmecorp-`._
-3. Create a Grafana Cloud API key with the `PluginPublisher` role.
-4. Keep a record of this API key as it will be required for signing a plugin
-
-## Signing a plugin
-
-### Using Github actions release workflow
-
-If the plugin is using the github actions supplied with `@grafana/create-plugin` signing a plugin is included out of the box. The [release workflow](./.github/workflows/release.yml) can prepare everything to make submitting your plugin to Grafana as easy as possible. Before being able to sign the plugin however a secret needs adding to the Github repository.
-
-1. Please navigate to "settings > secrets > actions" within your repo to create secrets.
-2. Click "New repository secret"
-3. Name the secret "GRAFANA_API_KEY"
-4. Paste your Grafana Cloud API key in the Secret field
-5. Click "Add secret"
-
-#### Push a version tag
-
-To trigger the workflow we need to push a version tag to github. This can be achieved with the following steps:
-
-1. Run `npm version <major|minor|patch>`
-2. Run `git push origin main --follow-tags`
-
-## Learn more
-
-Below you can find source code for existing app plugins and other related documentation.
-
-- [Basic data source plugin example](https://github.com/grafana/grafana-plugin-examples/tree/master/examples/datasource-basic#readme)
-- [`plugin.json` documentation](https://grafana.com/developers/plugin-tools/reference/plugin-json)
-- [How to sign a plugin?](https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin)
-
+**Setup Instructions:**
+1. Add a **Business Text Panel** to your dashboard.
+2. Set your query to **Get Preview** (or use a Metadata table with preview links generated).
+3. Paste the following snippet into the **Content (HTML)** editor:
 
 ```html
-<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-    <img src="{{preview}}" alt="Entry Preview" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;" />
-</div>
-```
+<div style="display: flex; justify-content: center; align-items: center; height: 100%; width: 100%;">
+  
+  {{#if (contains mime_type "video/")}}
+    <video src="{{entry}}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;"></video>
+  
+  {{else if (contains mime_type "audio/")}}
+    <audio src="{{entry}}" controls style="width: 100%; max-width: 400px;"></audio>
+  
+  {{else if (contains mime_type "image/")}}
+    <img src="{{entry}}" style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;" />
+  
+  {{else}}
+    <a href="{{entry}}" target="_blank" style="padding: 10px 20px; background-color: #3274D9; color: white; border-radius: 4px; text-decoration: none; font-weight: bold; font-family: sans-serif;">
+      Download File
+    </a>
+  {{/if}}
 
-```html
-<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-  <video src="{{entry}}" controls style="max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px;">
-    Your browser does not support the video tag.
-  </video>
-</div>
-```
-
-```html
-<div style="display: flex; justify-content: center; align-items: center; height: 100%; padding: 10px;">
-  <audio src="{{entry}}" controls style="width: 100%; max-width: 400px;">
-    Your browser does not support the audio element.
-  </audio>
 </div>
 ```

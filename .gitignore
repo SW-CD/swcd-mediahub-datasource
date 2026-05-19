@@ -33,6 +33,9 @@ artifacts/
 work/
 ci/
 
+# Local Mediahub files
+mediahub_storage 
+
 # e2e test directories
 /test-results/
 /playwright-report/

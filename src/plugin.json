@@ -5,6 +5,8 @@
   "id": "swcd-mediahub-datasource",
   "metrics": true,
   "backend": true,
+  "annotations": true,
+  "alerting": true,
   "executable": "gpx_mediahub",
   "info": {
     "description": "",
@@ -22,7 +24,7 @@
     "updated": "%TODAY%"
   },
   "dependencies": {
-    "grafanaDependency": ">=12.3.0",
+    "grafanaDependency": ">=10.2.0-0",
     "plugins": []
   }
 }

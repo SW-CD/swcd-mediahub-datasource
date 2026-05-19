@@ -3,3 +3,25 @@ services:
     extends:
       file: .config/docker-compose-base.yaml
       service: grafana
+    
+    environment:
+      # Required panel for the test dashboard
+      GF_INSTALL_PLUGINS: "marcusolsson-dynamictext-panel"
+
+      # Provisioning Variables: default is a read only user for testing
+      MEDIAHUB_URL: ${MEDIAHUB_URL:-https://mediahub.swcd.lu}
+      MEDIAHUB_USERNAME: ${MEDIAHUB_USERNAME:-_Grafana_}
+      MEDIAHUB_PASSWORD: ${MEDIAHUB_PASSWORD:-GrafanaTest}
+
+  # In case you want to self-host and test against a local MediaHub instance
+  #mediahub:
+  #  image: denglerchr/mediahub_oss:2.0.0
+  #  container_name: mediahub
+  #  restart: unless-stopped
+  #  ports:
+  #    - "8080:8080"
+  #  volumes:
+  #    - ./mediahub_storage:/storage # Stores actual media files
+  #  environment:
+  #    - MEDIAHUB_PASSWORD=admin-password-123
+  #    - MEDIAHUB_LOGGING_LEVEL=info
