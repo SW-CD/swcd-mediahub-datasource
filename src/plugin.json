@@ -9,17 +9,32 @@
   "alerting": true,
   "executable": "gpx_mediahub",
   "info": {
-    "description": "",
+    "description": "Connect to a Mediahub instance and query your files and media.",
     "author": {
       "name": "Swcd"
     },
-    "keywords": ["datasource"],
+    "keywords": [
+      "datasource"
+    ],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
     },
     "links": [],
-    "screenshots": [],
+    "screenshots": [
+      {
+        "name": "Dashboard with Mediahub datasource",
+        "path": "img/MediahubGrafana.webp"
+      },
+      {
+        "name": "Query editor",
+        "path": "img/QueryEditor.webp"
+      },
+      {
+        "name": "Variable query editor",
+        "path": "img/VariableQuery.webp"
+      }
+    ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
