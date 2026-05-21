@@ -16,7 +16,6 @@ services:
   # In case you want to self-host and test against a local MediaHub instance
   #mediahub:
   #  image: denglerchr/mediahub_oss:2.0.0
-  #  container_name: mediahub
   #  restart: unless-stopped
   #  ports:
   #    - "8080:8080"
@@ -24,4 +23,8 @@ services:
   #    - ./mediahub_storage:/storage # Stores actual media files
   #  environment:
   #    - MEDIAHUB_PASSWORD=admin-password-123
+  #    - MEDIAHUB_SERVER_MAX_SYNC_UPLOAD=2MB
   #    - MEDIAHUB_LOGGING_LEVEL=info
+  #    - MEDIAHUB_LOGGING_AUDIT_ENABLED=true
+  #    - MEDIAHUB_LOGGING_AUDIT_TYPE=database
+  #    - MEDIAHUB_LOGGING_AUDIT_RETENTION=7d
