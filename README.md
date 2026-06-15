@@ -21,8 +21,8 @@ To connect the data source to your MediaHub instance, navigate to **Connections 
 You will need the following information:
 
 1. **MediaHub URL:** The base URL of your MediaHub instance (e.g., `https://mediahub.internal.com`).
-2. **Client ID:** A valid OAuth2 / API Client ID generated within MediaHub.
-3. **Client Secret:** The corresponding secret for authentication.
+2. **Username:** A valid OAuth2 / API Username generated within MediaHub.
+3. **Password:** The corresponding password for authentication.
 
 Click **Save & test**. The plugin will perform an authentication handshake and verify the connection.
 
