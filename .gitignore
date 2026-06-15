@@ -32,6 +32,8 @@ dist/
 artifacts/
 work/
 ci/
+swcd-mediahub-datasource
+swcd-mediahub-datasource-1.0.0.zip
 
 # Local Mediahub files
 mediahub_storage 
