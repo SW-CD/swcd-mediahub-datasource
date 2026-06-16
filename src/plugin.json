@@ -24,15 +24,15 @@
     "screenshots": [
       {
         "name": "Dashboard with Mediahub datasource",
-        "path": "img/MediahubGrafana.webp"
+        "path": "img/MediahubGrafana.jpg"
       },
       {
         "name": "Query editor",
-        "path": "img/QueryEditor.webp"
+        "path": "img/QueryEditor.jpg"
       },
       {
         "name": "Variable query editor",
-        "path": "img/VariableQuery.webp"
+        "path": "img/VariableQuery.jpg"
       }
     ],
     "version": "%VERSION%",
